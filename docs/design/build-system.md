@@ -121,7 +121,7 @@ Needed beyond clang and Ninja: LLD, LLVM binutils, clang-format, clang-tidy, Mes
 - P3: the RISC-V userland baseline and float ABI are unset; if they differ from the kernel's, `lib/` builds per ABI.
 - T12, T3: the list omits userland assembly (program entry, syscall stubs), and no x86 assembly syntax is chosen.
 - T11: one ban has only a runtime check, the tidy check bans all recursion, and coverage of `boot/` is assumed.
-- F13, F4, P5: UEFI needs a FAT partition from slice 0.5, but FAT is phase 6 and F13 requires our own tools. A host-side FAT writer in phase 0 is implied.
+- F13, F4, P5: UEFI needs a FAT partition from slice 0.5, but FAT is phase 6 and F13 requires our own tools. Either a host-side FAT writer in phase 0, or QEMU's directory-backed FAT drive until one exists.
 - T6: container runtime, registry and CI provider are unnamed. QEMU's UEFI firmware is a third-party binary used only on the host.
 - D4: the language of `./x` and host scripts is unset; Python 3 is proposed.
 - Roadmap: CI lint starts in 0.1 but `./x` arrives in 0.2, so 0.1 uses a plain script.
