@@ -54,11 +54,11 @@ doc     = Open or create the file at path, relative to dirFd.
 
 `layer` is `native` or `posix`; `since` is the phase. An argument is a scalar C type or a user-memory kind: `path`, `in(Type)`, `out(Type)`, `inBytes(length)`, `outBytes(length)`. At most six arguments, each one register. `errors.def` lists each code once with its native and POSIX names (`ERR_NOT_FOUND`, `ENOENT`) and message.
 
-The host tool `tools/syscall-gen` generates:
+The host tool `tools/syscall-gen` emits:
 - Kernel: the dispatch table, typed handler prototypes (`sysFileOpen`), thunks that unpack six registers.
 - libyart: number constants, public headers with doc comments (K13), C stubs over one raw per-port entry.
 - Docs: one manual page per call (U14).
-- Tools: tracer decode table (A12), fuzzer argument kinds (Q8), sandbox groups (X7).
+- Tools: tracer table (A12), fuzzer argument kinds (Q8), sandbox groups (X7).
 - A hash of the table, placed in an ELF note in every program.
 
 ### Two libraries (A1)
@@ -131,7 +131,7 @@ The loader sets `Process.personality` from the program's ELF note; fork inherits
 Trap entry saves a `TrapFrame` and calls `KernelTrapOps.syscall`. The kernel reads number and arguments with `arch->context->syscallArgs`, bounds-checks the number (`ERR_NO_SYSCALL`), calls the handler and stores the result with `setReturn`. In libyart each port supplies one raw entry and the start-up stub.
 
 ## Build order
-- Phase 2: table, generator, dispatch, native personality, entry on two ports, ABI note, enough of libyart to start a program.
+- Phase 2: table, generator, dispatch, native personality, entry on two ports, ABI note, enough libyart to start a program.
 - Phase 3: full libyart, libc, threads, tracer, syscall fuzzer.
 - Phase 4: AArch64 entry.
 - Phase 5: shared libraries, socket and event calls, sandbox groups.
@@ -141,16 +141,16 @@ Trap entry saves a `TrapFrame` and calls `KernelTrapOps.syscall`. The kernel rea
 - Host: generator output compared with expected files; definition parser fuzzed; libc pure functions under the address sanitizer (T9).
 - In-kernel: unknown number; bad pointer for every user-memory argument kind (K14).
 - Userland: one test per call on every port; struct sizes equal across ports; unmodified textbook POSIX programs compile and run (D6); thread stress; tracer output for a known program.
-- Benchmark: empty syscall round trip (Q10).
+- Benchmark: empty syscall cost (Q10).
 
 ## Risks and open questions
 - D6, principle 9 against S1, S7, S8: POSIX-only kernel calls sit in the native table as `layer = posix`. Whether they belong to the documented native API is unsettled.
 - A1, roadmap: libyart is listed in phase 3, but phase 2 programs need stubs and start-up code.
 - A11, A1, M15 against D6: no native thread API is decided and `malloc` lives in libc, so native programs would need libc and `<pthread.h>`.
-- A2, R1: ports start in phase 6, so only tests drive libc for three phases.
+- A2, R1: ports start in phase 6, so only tests drive libc until then.
 - A3, S10: static programs embed numbers, so renumbering means rebuilding everything. Whether numbers freeze at 1.0 is undecided.
 - A5, A6, P3: the RISC-V float ABI is unset, and the generic ELF target's default may differ from the standard one.
-- A10: which library, which phase, and its exemption from T7 and T8 are open.
+- A10: which library, which phase, and any exemption from T7 and T8 are open.
 - A12: the trace mechanism is a proposal. Nothing covers debugging user programs.
 - K7, X7: one error code with two names, and sandbox groups in the table, are proposals.
 - T12, A4: user assembly is not on the allowed list. The generator's language depends on open question 2.

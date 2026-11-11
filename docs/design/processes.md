@@ -67,7 +67,7 @@ A spawned child gets only the descriptors its actions (duplicate, open, close) n
 
 ```c
 typedef struct RunQueue {
-    Spinlock lock;
+    SpinLock lock;
     List     fixed[SCHED_FIXED_LEVELS];
     List     normal[SCHED_NORMAL_LEVELS];
     uint32_t fixedBitmap, normalBitmap;

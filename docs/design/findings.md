@@ -67,3 +67,25 @@ Against `boot.md` (B5). Fields the other notes need: `firmwareRuntime` (UEFI sys
 
 - QEMU `-kernel` behaviour with a non-ELF file on RISC-V `virt`, and what arrives in `a2` (slice 0.6).
 - Package names, versions, target triples and flags in `build-system.md` (slices 0.1, 0.2).
+
+## From the processes and syscalls notes
+
+Decision conflicts that need a call:
+
+- **S7 is too small for D6.** The signal subset omits hangup, broken pipe, alarm, window change, quit, abort and the user signals. `abort`, `alarm` and editor resize need them, so "POSIX source runs unchanged" fails with S7 as written. Proposed fix: S7 becomes the full standard signal set.
+- **Native programs would need libc.** A11 picks POSIX threads only and M15 puts `malloc` in libc, which contradicts "our own programs use libyart" (D6, A1). Proposed fix: libyart owns threads and the allocator; libc wraps them.
+- **Local sockets arrive too late.** S12 has them in phase 5, but phase 3 services (init, log service, elevation service) need them (U12, U17, X4). Proposed fix: local sockets move to phase 3.
+- **libyart arrives too late.** Listed in phase 3, but phase 2 user programs need its syscall stubs and start-up code (A1). Proposed fix: a minimal libyart in phase 2.
+- **Are fork, exec and pid-based calls part of the native API?** They exist in the kernel only for POSIX. The note marks them `layer = posix` in the syscall table (D6, S1, S7, S8).
+- **Randomized layout for static programs** in phases 2 to 4 needs self-relocating position-independent executables (S10, X6). Not decided.
+- **The fixed-priority class** does not win across CPUs with per-CPU queues unless woken threads are pushed, nothing caps a spinning fixed thread, and no lock has priority inheritance (S4, S6, K3).
+- **S16** does not say whether the memory limit counts mapped or resident bytes, and nothing limits process count.
+- **Syscall numbers** are embedded in static programs, so renumbering means rebuilding everything. Whether numbers freeze at 1.0 is undecided (A3, S10).
+- **A10**: which math library, which phase, where it lives, and whether it is exempt from the style and warning rules.
+- **A12**: no trace mechanism is decided, and nothing covers debugging user programs at all.
+- **Shared buffers**: a client that shrinks a shared buffer can fault the compositor; sealing is not decided (S12, W2).
+- **A Linux personality** needs full signals, Linux's `/proc` and `epoll`, not only a second syscall table (G7).
+- No phase is given for `poll`, `/proc` or crash reports; phase 3, 3 and 2 proposed (S13, S14, S15).
+- `memory.md` lists fork in phase 2; `processes.md` puts the fork call in phase 3. Read as kernel support in phase 2, the call in phase 3.
+
+More arch contract gaps: `TrapFrame` is opaque, so the contract needs ops to push and restore a signal frame, read the user program counter and stack pointer, dump user registers, walk a user backtrace and rewind a syscall for restart. The port must also report its ELF machine number.
