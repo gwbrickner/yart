@@ -89,3 +89,45 @@ Decision conflicts that need a call:
 - `memory.md` lists fork in phase 2; `processes.md` puts the fork call in phase 3. Read as kernel support in phase 2, the call in phase 3.
 
 More arch contract gaps: `TrapFrame` is opaque, so the contract needs ops to push and restore a signal frame, read the user program counter and stack pointer, dump user registers, walk a user backtrace and rewind a syscall for restart. The port must also report its ELF machine number.
+
+## From the storage and drivers notes
+
+Roadmap ordering:
+
+| # | Finding | IDs | Proposed fix |
+| --- | --- | --- | --- |
+| R9 | The phase 3 framebuffer console needs a display and a keyboard, but virtio display and input have no phase, RISC-V has no firmware framebuffer, and the x86 one is listed for phase 5 | B10, H2, H9 | Virtio display and input, and the x86 firmware framebuffer, land in phase 3 |
+| R10 | fsck and mkfs are called host tools, but VirtualBox installs and the phase 6 installer have no host | F1, F3, G4 | Both also build for yart from phase 3; until then a dirty volume mounts with a loud warning |
+| R11 | Virtio random in phase 2 would supply early entropy on QEMU, but H2 names only block and console for that phase | H16, H2, X6 | Add virtio random to phase 2 (pairs with R7) |
+| R12 | Input and display driver tests need keys injected and a screen dump, but the boot-test runner only drives serial | H17, Q1 | Extend the runner to use QEMU's monitor for key injection and screen dumps in phase 3 |
+
+Risk to settle before phase 5:
+
+- **x86 PCI interrupts before the ACPI interpreter.** With static tables only, x86 cannot route PCI interrupt pins, so every x86 PCI device before phase 6 must offer message-signaled interrupts. If VirtualBox's AHCI controller does not (to verify), phase 5 needs polling or the interpreter early (H3, H5, H6, D9).
+
+More arch contract gaps: x86 port I/O, device memory mapping, a message-signaled interrupt vector op, memory barriers, a CPU random-instruction op (H8, H3, H16). The page allocator needs a "below 4 GiB" flag for some controllers (M1).
+
+Unsettled, needs a call:
+
+- yartfs v2: journal or copy-on-write, and whether v1 volumes convert in place (F2).
+- `root=` syntax; GPT partition label proposed (B9, F5).
+- Directories for mount points, the EFI partition, root's home and app directories (F8, W26).
+- Whether set-user and set-group bits are stored or rejected (F10, X4).
+- Whether access times are written on read; only alongside another inode write proposed (F14).
+- Swap partition or swap file (M9).
+- exFAT, which large USB sticks often ship with (F4, F16).
+- File watching: recursive or not; non-recursive assumed (F15).
+- yartfs v1 fixes blocks at 4 KiB, so disks with larger sectors are unsupported (F12).
+- Device nodes live in devfs only; yartfs cannot store one (F7).
+- Who may mount removable media; a service through the elevation service proposed (F16, X4).
+- What loads a module for an unmatched device, and where boot-critical modules live before the root mounts (K1, H1).
+- Which ACPI interpreter, and where it sits in the tree (H5, D7).
+- USB hubs; boot-protocol or full report parsing for keyboards and mice (H7).
+- Audio mixer in the kernel or a userspace service (H11).
+- Key code numbering (H8, W22).
+- The real test machine, which sets the phase 6 driver list (D9, H12).
+- Hyper-V: UEFI machines may offer only paravirtual devices and the older machine type may be legacy BIOS, which P5 excludes. To verify (R8).
+
+Syscall table gaps: `syscalls-and-libraries.md` lists no rename, link, symbolic link, attribute, resize, sync, mount or watch calls. Its list is illustrative; the phase 2 spec must be complete.
+
+To verify before phase 5 (VirtualBox): AHCI message-signaled interrupts, whether the pointer can be PS/2, how the EFI screen mode is set, how the raw image is attached, the serial port, whether a virtio network adapter is offered. To verify in phase 2 (QEMU): memory-mapped virtio may default to the legacy interface unless a flag is set.
